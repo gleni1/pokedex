@@ -70,6 +70,15 @@ func startRepl() {
 			pokeapi.HandleCatch(config, pokemonName)
 			continue
 		}
+		if command == "inspect" {
+			if len(args) == 0 {
+				fmt.Println("Usage: inspect <pokemon_name>")
+				continue
+			}
+			pokemonName := strings.Join(args, "")
+			pokeapi.HandleInspect(config, pokemonName)
+			continue
+		}
 
 		fmt.Println(input)
 	}

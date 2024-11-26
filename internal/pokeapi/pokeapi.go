@@ -43,10 +43,53 @@ type Pokedex struct {
 }
 
 type Pokemon struct {
-	Name           string `json:"name"`
-	BaseExperience int    `json:"base_experience"`
-	Height         int    `json:"height"`
-	Weight         int    `json:"weight"`
+	Name           string        `json:"name"`
+	BaseExperience int           `json:"base_experience"`
+	Height         int           `json:"height"`
+	Weight         int           `json:"weight"`
+	Stats          []PokemonStat `json:"stats"`
+	Types          []PokemonType `json:"types"`
+}
+
+type PokemonStat struct {
+	BaseStat int `json:"base_stat"`
+	Stat     struct {
+		Name string `json:"name"`
+	} `json:"stat"`
+}
+
+type PokemonType struct {
+	Type struct {
+		Name string `json:"name"`
+	} `json:"type"`
+}
+
+func HandleInspect(config *Config, pokemonName string) {
+	cachedData, found := config.Cache.Get(pokemonName)
+	var pokemon Pokemon
+	if found {
+		err := json.Unmarshal(cachedData, &pokemon)
+		if err != nil {
+			fmt.Println("Error reading cached data:", err)
+			return
+		}
+	} else {
+		fmt.Println("You have not caught that pokemon")
+		return
+	}
+
+	fmt.Printf("Name: %s\n", pokemon.Name)
+	fmt.Printf("Height: %d\n", pokemon.Height)
+	fmt.Printf("Weight: %d\n", pokemon.Weight)
+	fmt.Printf("Stats: \n")
+	for _, stat := range pokemon.Stats {
+		fmt.Printf(" %s: %d\n", stat.Stat.Name, stat.BaseStat)
+	}
+	fmt.Printf("Types: \n")
+	for _, pokType := range pokemon.Types {
+		fmt.Printf("%s\n", pokType.Type.Name)
+	}
+
 }
 
 func HandleCatch(config *Config, pokemonName string) {
@@ -78,7 +121,7 @@ func HandleCatch(config *Config, pokemonName string) {
 		config.Cache.Add(pokemonName, cachedData)
 	}
 
-	baseChance := float64(100-pokemon.BaseExperience)/100.0
+	baseChance := float64(100-pokemon.BaseExperience) / 100.0
 	if baseChance < 0.1 {
 		baseChance = 0.1
 	}
@@ -86,7 +129,7 @@ func HandleCatch(config *Config, pokemonName string) {
 	if rand.Float64() < baseChance {
 		fmt.Printf("Successfully caught %s!\n", pokemon.Name)
 		config.Pokedex[pokemonName] = pokemon
-	}else {
+	} else {
 		fmt.Printf("Failed to catch %s. Try again!\n", pokemon.Name)
 	}
 }
