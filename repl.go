@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/gleni1/pokedex/internal/pokeapi"
+	"github.com/gleni1/pokedex/internal/pokecache"
 )
 
 type cliCommand struct {
@@ -16,8 +18,9 @@ type cliCommand struct {
 
 func startRepl() {
 	scanner := bufio.NewScanner(os.Stdin)
-	config := &pokeapi.Config{}
-
+	config := &pokeapi.Config{
+		Cache: pokecache.NewCache(5 * time.Second),
+	}
 	for {
 		fmt.Print("Pokedex > ")
 		scanner.Scan()
