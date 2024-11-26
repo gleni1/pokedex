@@ -20,7 +20,8 @@ type cliCommand struct {
 func startRepl() {
 	scanner := bufio.NewScanner(os.Stdin)
 	config := &pokeapi.Config{
-		Cache: pokecache.NewCache(5 * time.Second),
+		Cache:   pokecache.NewCache(5 * time.Second),
+		Pokedex: make(map[string]pokeapi.Pokemon),
 	}
 	for {
 		fmt.Print("Pokedex > ")
@@ -59,6 +60,15 @@ func startRepl() {
 			}
 			areaName := args[0]
 			pokeapi.CommandExplore(config, areaName)
+		}
+		if command == "catch" {
+			if len(args) == 0 {
+				fmt.Println("Usage: catch <pokemon_name>")
+				continue
+			}
+			pokemonName := strings.Join(args, "")
+			pokeapi.HandleCatch(config, pokemonName)
+			continue
 		}
 
 		fmt.Println(input)

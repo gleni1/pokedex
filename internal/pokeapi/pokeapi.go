@@ -3,6 +3,7 @@ package pokeapi
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 
 	"github.com/gleni1/pokedex/internal/pokecache"
@@ -12,6 +13,7 @@ type Config struct {
 	NextURL     *string
 	PreviousURL *string
 	Cache       *pokecache.Cache
+	Pokedex     map[string]Pokemon
 }
 
 type APIResponse struct {
@@ -34,6 +36,87 @@ type PokemonEncounter struct {
 	Pokemon struct {
 		Name string `json:"name"`
 	} `json:"pokemon"`
+}
+
+type Pokedex struct {
+	Caught map[string]Pokemon
+}
+
+type Pokemon struct {
+	Name           string `json:"name"`
+	BaseExperience int    `json:"base_experience"`
+	Height         int    `json:"height"`
+	Weight         int    `json:"weight"`
+}
+
+func HandleCatch(config *Config, pokemonName string) {
+	cachedData, found := config.Cache.Get(pokemonName)
+	var pokemon Pokemon
+	if found {
+		err := json.Unmarshal(cachedData, &pokemon)
+		if err != nil {
+			fmt.Println("Error reading cached data:", err)
+			return
+		}
+	} else {
+		url := fmt.Sprintf("https://pokeapi.co/api/v2/pokemon/%s", pokemonName)
+		response, err := http.Get(url)
+		if err != nil {
+			fmt.Println("Error fetching Pokemon:", err)
+			return
+		}
+		defer response.Body.Close()
+
+		decoder := json.NewDecoder(response.Body)
+		err = decoder.Decode(&pokemon)
+		if err != nil {
+			fmt.Println("Error decoding API response:", err)
+			return
+		}
+
+		cachedData, _ := json.Marshal(pokemon)
+		config.Cache.Add(pokemonName, cachedData)
+	}
+
+	baseChance := float64(100-pokemon.BaseExperience)/100.0
+	if baseChance < 0.1 {
+		baseChance = 0.1
+	}
+
+	if rand.Float64() < baseChance {
+		fmt.Printf("Successfully caught %s!\n", pokemon.Name)
+		config.Pokedex[pokemonName] = pokemon
+	}else {
+		fmt.Printf("Failed to catch %s. Try again!\n", pokemon.Name)
+	}
+}
+
+func FetchLocationAreas(url string, config *Config) (*APIResponse, error) {
+	cachedData, found := config.Cache.Get(url)
+	if found {
+		var apiResponse APIResponse
+		err := json.Unmarshal(cachedData, &apiResponse)
+		if err != nil {
+			return nil, err
+		}
+		return &apiResponse, nil
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var apiResponse APIResponse
+
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&apiResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	return &apiResponse, nil
 }
 
 func HandleMap(config *Config) {
@@ -70,34 +153,6 @@ func HandleBMap(config *Config) {
 
 	config.NextURL = response.Next
 	config.PreviousURL = response.Previous
-}
-
-func FetchLocationAreas(url string, config *Config) (*APIResponse, error) {
-	cachedData, found := config.Cache.Get(url)
-	if found {
-		var apiResponse APIResponse
-		err := json.Unmarshal(cachedData, &apiResponse)
-		if err != nil {
-			return nil, err
-		}
-		return &apiResponse, nil
-	}
-
-	resp, err := http.Get(url)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	var apiResponse APIResponse
-
-	decoder := json.NewDecoder(resp.Body)
-	err = decoder.Decode(&apiResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	return &apiResponse, nil
 }
 
 func CommandExplore(config *Config, areaName string) {
