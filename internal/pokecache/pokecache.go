@@ -34,6 +34,17 @@ func (cache *Cache) Add(key string, val []byte) {
 	cache.mu.Unlock()
 }
 
+func (cache *Cache) Keys() []string {
+	cache.mu.Lock()
+	defer cache.mu.Unlock()
+
+	keys := make([]string, 0, len(cache.store))
+	for key := range cache.store {
+		keys = append(keys, key)
+	}
+	return keys
+}
+
 func (cache *Cache) Get(key string) ([]byte, bool) {
 	entry, exists := cache.store[key]
 	if exists {

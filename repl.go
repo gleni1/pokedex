@@ -79,6 +79,10 @@ func startRepl() {
 			pokeapi.HandleInspect(config, pokemonName)
 			continue
 		}
+		if input == "pokedex" {
+			pokeapi.HandlePokedex(config)
+			continue
+		}
 
 		fmt.Println(input)
 	}

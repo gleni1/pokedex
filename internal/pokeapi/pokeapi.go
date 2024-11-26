@@ -92,6 +92,20 @@ func HandleInspect(config *Config, pokemonName string) {
 
 }
 
+func HandlePokedex(config *Config) {
+	keys := config.Cache.Keys()
+
+	if len(keys) == 0 {
+		fmt.Println("No Pokemon in cache.")
+		return
+	}
+
+	fmt.Println("Pokemon in cache: ")
+	for _, name := range keys {
+		fmt.Println("-", name)
+	}
+}
+
 func HandleCatch(config *Config, pokemonName string) {
 	cachedData, found := config.Cache.Get(pokemonName)
 	var pokemon Pokemon
