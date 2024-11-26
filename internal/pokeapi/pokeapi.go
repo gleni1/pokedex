@@ -26,6 +26,16 @@ type LocationArea struct {
 	Url  string `json:"url"`
 }
 
+type LocationAreaDetails struct {
+	PokemonEncounters []PokemonEncounter `json:"pokemon_encounters"`
+}
+
+type PokemonEncounter struct {
+	Pokemon struct {
+		Name string `json:"name"`
+	} `json:"pokemon"`
+}
+
 func HandleMap(config *Config) {
 	url := "https://pokeapi.co/api/v2/location-area/"
 	if config.NextURL != nil {
@@ -88,6 +98,55 @@ func FetchLocationAreas(url string, config *Config) (*APIResponse, error) {
 	}
 
 	return &apiResponse, nil
+}
+
+func CommandExplore(config *Config, areaName string) {
+	fmt.Printf("Exploring %s...\n", areaName)
+	url := fmt.Sprintf("https://pokeapi.co/api/v2/location-area/%s", areaName)
+
+	response, err := FetchLocationAreaDetails(url, config)
+	if err != nil {
+		fmt.Println("Error fetching location area details:", err)
+		return
+	}
+
+	fmt.Println("Found Pokemon:")
+	for _, pokemon := range response.PokemonEncounters {
+		fmt.Printf(" - %s\n", pokemon.Pokemon.Name)
+	}
+}
+
+func FetchLocationAreaDetails(url string, config *Config) (*LocationAreaDetails, error) {
+	cachedData, found := config.Cache.Get(url)
+	if found {
+		var details LocationAreaDetails
+		err := json.Unmarshal(cachedData, &details)
+		if err != nil {
+			return nil, err
+		}
+		return &details, nil
+	}
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	var details LocationAreaDetails
+	decoder := json.NewDecoder(resp.Body)
+	err = decoder.Decode(&details)
+	if err != nil {
+		return nil, err
+	}
+
+	data, err := json.Marshal(details)
+	if err == nil {
+		config.Cache.Add(url, data)
+	}
+
+	return &details, nil
+
 }
 
 func DisplayLocations(locations []LocationArea) {

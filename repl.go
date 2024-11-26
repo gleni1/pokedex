@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gleni1/pokedex/internal/pokeapi"
@@ -25,6 +26,13 @@ func startRepl() {
 		fmt.Print("Pokedex > ")
 		scanner.Scan()
 		input := scanner.Text()
+
+		parts := strings.Fields(input)
+		if len(parts) == 0 {
+			continue
+		}
+		command := parts[0]
+		args := parts[1:]
 		if input == "exit" {
 			commandExit()
 		}
@@ -43,6 +51,14 @@ func startRepl() {
 		if input == "mapb" {
 			pokeapi.HandleBMap(config)
 			continue
+		}
+		if command == "explore" {
+			if len(args) == 0 {
+				fmt.Println("Usage: explore <area_name>")
+				continue
+			}
+			areaName := args[0]
+			pokeapi.CommandExplore(config, areaName)
 		}
 
 		fmt.Println(input)
